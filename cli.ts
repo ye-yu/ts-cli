@@ -5,17 +5,24 @@ import { search } from '@inquirer/prompts'
 console.log("Reading modules...")
 
 const moduleCandidates = fs.readdirSync('.')
-const modules = moduleCandidates.filter((candidate) => {
+const modules = moduleCandidates.flatMap((candidate) => {
   const stats = fs.statSync(candidate)
-  const moduleFile = path.join(candidate, 'module.ts')
-  const moduleFileStat = fs.existsSync(moduleFile) ? fs.statSync(moduleFile) : null
-  return stats.isDirectory() && moduleFileStat && moduleFileStat.isFile()
-}).map((candidate) => {
-  return {
-    name: candidate,
-    value: candidate,
-    description: `Script: ${candidate}/module.ts`,
+  if (!stats.isDirectory()) {
+    return []
   }
+
+  const moduleFiles = fs.readdirSync(candidate).filter((file) => {
+    const fullPath = path.join(candidate, file)
+    const fileStats = fs.statSync(fullPath)
+    return fileStats.isFile() && file.endsWith('module.ts')
+  })
+  return moduleFiles.map((file) => {
+    return {
+      name: `${candidate} (${file})`,
+      value: path.join(candidate, file),
+      description: `Script: ${candidate}/${file}`,
+    }
+  })
 })
 try {
   do {
@@ -32,7 +39,7 @@ try {
 
     console.log("Running", selectedModule)
 
-    const imported = await import(`./${selectedModule}/module.ts`)
+    const imported = await import(`./${selectedModule}`)
     if ('default' in imported && typeof imported.default === 'function') {
       await imported.default().catch((error: unknown) => {
         if (typeof error === 'object' && error !== null && 'name' in error && error.name === 'ExitPromptError') {

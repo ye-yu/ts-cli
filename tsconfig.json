@@ -5,7 +5,7 @@
         "rewriteRelativeImportExtensions": true,
         "erasableSyntaxOnly": true,
         "verbatimModuleSyntax": true,
-        "types": ["node", "pg"]
+        "types": ["node"]
     },
     "exclude": [".github"]
 }

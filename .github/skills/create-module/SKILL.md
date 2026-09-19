@@ -1,6 +1,6 @@
 ---
 name: create-module
-description: 'Create a new runnable module for this workspace. Use when adding a new module directory that will be discovered by cli.ts, exports a default async function from module.ts, uses fs.util.ts to enumerate working files, uses @inquirer/prompts to browse inputs, and optionally restarts exploration in a rerunnable loop.'
+description: 'Create a new runnable module for this workspace. Use when adding a module file inside a top-level directory that will be discovered by cli.ts, exports a default async function, uses fs.util.ts to enumerate working files, uses @inquirer/prompts to browse inputs, and optionally restarts exploration in a rerunnable loop.'
 argument-hint: 'Describe the new module purpose, input files to browse, and the exploration flow.'
 user-invocable: true
 disable-model-invocation: false
@@ -9,8 +9,8 @@ disable-model-invocation: false
 # Create Workspace Module
 
 ## Outcome
-Produce a new module directory that the workspace CLI can discover and run.
-The module must expose a default async function from `module.ts` and keep its exploration flow safe to rerun.
+Produce a new module directory containing a module file that the workspace CLI can discover and run.
+The discovered module file must expose a default async function and keep its exploration flow safe to rerun.
 
 ## When To Use
 - Adding a new module folder that should appear in the CLI search menu.
@@ -19,9 +19,11 @@ The module must expose a default async function from `module.ts` and keep its ex
 - Standardizing module structure across this workspace.
 
 ## Workspace Contract
-- The CLI discovers modules by scanning top-level directories for `module.ts` files.
-- Each module must live in its own top-level directory and include `module.ts`.
-- `module.ts` must export a default async function.
+- The CLI scans immediate child directories of the workspace root, then discovers every regular file whose name ends with `module.ts`.
+- A module file must live directly inside a top-level directory; nested module files are not discovered.
+- The module filename may be `module.ts` or another name ending in `module.ts`.
+- The CLI builds the module list once when it starts, so newly added or renamed module files require restarting the CLI to appear.
+- The discovered module file must export a default async function.
 - Module code should be rerunnable: the user can finish one exploration pass and start another without restarting the CLI.
 - When listing files that live next to the module, use `readdirSync(import.meta.url)` from [fs.util.ts](../../../fs.util.ts).
 - If the module needs files outside its own directory, direct `node:fs` access is allowed for those external paths.
@@ -29,7 +31,7 @@ The module must expose a default async function from `module.ts` and keep its ex
 
 ## Procedure
 1. Create a new top-level directory for the module.
-2. Add `module.ts` inside that directory.
+2. Add `module.ts` (or another filename ending in `module.ts`) directly inside that directory.
 3. Put the interactive flow inside `export default async function () { ... }` so each rerun can rescan the module directory.
 4. Start from the local module directory by using `import.meta.url`:
    - Use `readdirSync(import.meta.url)` when the module needs to inspect working files that live beside `module.ts`.
@@ -46,14 +48,15 @@ The module must expose a default async function from `module.ts` and keep its ex
 
 ## Decision Points
 - If the module needs to browse files in its own directory: use [fs.util.ts](../../../fs.util.ts) instead of reimplementing path resolution.
+- If a module directory contains multiple files ending in `module.ts`, each is a separate CLI entry and should have a distinct purpose and prompt label.
 - If the module needs external files or directories: use `node:fs` for those non-local paths and keep the local-module scan rule unchanged.
 - If the list is small and fixed: `select` can work, but default to `search` because the workspace modules already use searchable browsing.
 - If expensive parsing results can be reused across reruns: keep a module-level cache keyed by the selected file path.
-- Rescan the module directory inside the default async function on every run so new working files are visible after restart.
+- Rescan the module's working directory inside the default async function on every run so new working files are visible after restart. This does not refresh the CLI's module list; restart the CLI process after adding or renaming a module file.
 
 ## Completion Checks
-- The module sits in a top-level directory with a `module.ts` file.
-- `module.ts` exports `default async function`.
+- The module file sits directly in a top-level directory and its filename ends in `module.ts`.
+- The discovered module file exports `default async function`.
 - The flow is compatible with [cli.ts](../../../cli.ts) discovery.
 - Working files in the module directory are enumerated through [fs.util.ts](../../../fs.util.ts).
 - Any external-file access is handled separately and does not replace the local module scan pattern.
