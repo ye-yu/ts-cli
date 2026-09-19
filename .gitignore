@@ -1,0 +1,16 @@
+cache/
+*.zip
+*.csv
+*.CSV
+*.tsv
+*.TSV
+*.har
+node_modules
+.env
+*.sql
+*.query
+*.dbp
+*.DBP
+*.log
+*.txt
+*.xlsx
