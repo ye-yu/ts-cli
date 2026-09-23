@@ -12,9 +12,19 @@ export const resolveByMetaUrl = (importMetaUrl: string, relativePath: string): s
     return path.resolve(currentDir, relativePath)
 }
 
+export const relativeByMetaUrl = (importMetaUrl: string, relativePath: string): string => {
+    const currentDir = getCurrentDirectory(importMetaUrl)
+    return path.relative(currentDir, relativePath)
+}
+
 export const readdirSync = (importMetaUrl: string) => {
     const currentDir = getCurrentDirectory(importMetaUrl)
     return fs.readdirSync(currentDir)
+}
+
+export const mkdirSync = (importMetaUrl: string, relativePath: string) => {
+    const currentDir = getCurrentDirectory(importMetaUrl)
+    return fs.mkdirSync(path.join(currentDir, relativePath), { recursive: true })
 }
 
 export const readJsonSync = <T = any>(importMetaUrl: string, fileName: string): T => {
@@ -58,10 +68,15 @@ export const writeTextSync = (importMetaUrl: string, fileName: string, data: str
     fs.writeFileSync(filePath, data, 'utf-8')
 }
 
-export const createWriteStream = (importMetaUrl: string, fileName: string, options?: Parameters<typeof fs.createWriteStream>[1]) => {
+export function createWriteStream(importMetaUrl: string, fileName: string, options?: Parameters<typeof fs.createWriteStream>[1]) {
     const currentDir = getCurrentDirectory(importMetaUrl)
     const filePath = path.join(currentDir, fileName)
     const ws = fs.createWriteStream(filePath, options)
+    return ws
+}
+
+export const createWriterStream = (importMetaUrl: string, fileName: string, options?: Parameters<typeof fs.createWriteStream>[1]) => {
+    const ws = createWriteStream(importMetaUrl, fileName, options)
     return {
         close: () => ws.close(),
         write: (...args: Parameters<typeof ws.write>) => {
