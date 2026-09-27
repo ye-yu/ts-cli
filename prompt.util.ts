@@ -13,7 +13,7 @@ const responseCache = {} as Record<string, any>
 function constructCacheKey(message: string) {
   const maybeStack: { stack?: string } = {}
   Error.captureStackTrace(maybeStack)
-  const callSite = maybeStack.stack?.split('\n')[1] ?? ''
+  const callSite = maybeStack.stack?.split('\n')[3] ?? ''
   return `${callSite}${message}`
 }
 function saveResponse(key: string, value: any) {
